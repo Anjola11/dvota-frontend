@@ -14,6 +14,7 @@ import { ForgotPassword } from '@/pages/auth/ForgotPassword';
 import { ResetPassword } from '@/pages/auth/ResetPassword';
 import { CreateElection } from '@/pages/election/CreateElection';
 import { ManageElection } from '@/pages/election/ManageElection';
+import { Settings } from '@/pages/settings/Settings';
 
 function App() {
   return (
@@ -33,6 +34,11 @@ function App() {
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             } />
             <Route path="/create-election" element={

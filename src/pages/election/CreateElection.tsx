@@ -28,8 +28,9 @@ export interface CreateElectionData {
         candidates: {
             id: string; // temp id
             fullname: string;
-            email: string;
             nickname?: string;
+            imageFile?: File; // Optional image to upload after creation
+            imagePreview?: string; // Data URL for preview
         }[];
     }[];
     voters: string[]; // emails
@@ -91,6 +92,8 @@ export const CreateElection = () => {
             const election_id = electionRes.data.data.id;
 
             // Add Positions and Candidates
+            const candidateImageUploads: { electionId: string; candidateId: string; file: File }[] = [];
+
             for (const position of formData.positions) {
                 const posRes = await api.post('/elections/add-position', {
                     election_id,
@@ -99,13 +102,37 @@ export const CreateElection = () => {
                 const position_id = posRes.data.data.id;
 
                 for (const candidate of position.candidates) {
-                    await api.post('/elections/add-candidate', {
+                    const candRes = await api.post('/elections/add-candidate', {
                         election_id,
                         position_id,
-                        email: candidate.email,
-                        fullname: candidate.fullname,
+                        fullName: candidate.fullname,
                         nickname: candidate.nickname || undefined,
                     });
+
+                    // If candidate has an image, queue it for upload
+                    if (candidate.imageFile) {
+                        candidateImageUploads.push({
+                            electionId: election_id,
+                            candidateId: candRes.data.data.id,
+                            file: candidate.imageFile
+                        });
+                    }
+                }
+            }
+
+            // Upload candidate images
+            for (const upload of candidateImageUploads) {
+                try {
+                    const formDataImg = new FormData();
+                    formDataImg.append('file', upload.file);
+                    await api.post(
+                        `/elections/${upload.electionId}/candidates/${upload.candidateId}/picture`,
+                        formDataImg,
+                        { headers: { 'Content-Type': 'multipart/form-data' } }
+                    );
+                } catch (imgError) {
+                    console.error('Failed to upload candidate image:', imgError);
+                    // Continue with other uploads even if one fails
                 }
             }
 

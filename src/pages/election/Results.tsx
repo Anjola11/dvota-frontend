@@ -8,6 +8,7 @@ import { ArrowLeft, Download, RefreshCw, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { FullPageSpinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Avatar } from '@/components/ui/Avatar';
 import api from '@/lib/axios';
 import { ElectionResult } from '@/types';
 
@@ -182,6 +183,12 @@ export const Results = () => {
                                         <div className="flex-shrink-0 w-8 text-center font-bold text-gray-500">
                                             {i === 0 ? <Trophy className="h-5 w-5 text-yellow-500 mx-auto" /> : `#${i + 1}`}
                                         </div>
+                                        <Avatar
+                                            src={(candidate as any).candidate_picture_url}
+                                            fallback={candidate.fullname}
+                                            size="sm"
+                                            className="ml-2"
+                                        />
                                         <div className="flex-1 min-w-0 px-3">
                                             <p className={`text-sm font-medium ${i === 0 ? 'text-primary' : 'text-gray-900'} truncate`}>
                                                 {candidate.fullname}

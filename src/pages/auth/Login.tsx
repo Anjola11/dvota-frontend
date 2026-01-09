@@ -34,7 +34,17 @@ export const Login = () => {
                 toast.error(response.data.message || 'Login failed');
             }
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Invalid email or password');
+            const errorData = error.response?.data || {};
+            const errorMessage = errorData.detail || errorData.message || "";
+
+            if (error.response?.status === 401 && errorMessage.includes("verify your account")) {
+                toast.error("Please verify your account before logging in");
+                localStorage.setItem('temp_email', data.email);
+                // Note: user_id may not be available here, VerifyOtp will handle resending
+                navigate('/verify-otp', { state: { otpType: 'signup' } });
+                return;
+            }
+            toast.error(errorMessage || 'Invalid email or password');
         } finally {
             setIsLoading(false);
         }

@@ -23,6 +23,16 @@ api.interceptors.response.use(
 
         // If 401 (Unauthorized) and we haven't retried yet
         if (error.response?.status === 401 && !originalRequest._retry) {
+            // Don't attempt to refresh token for login requests
+            if (originalRequest.url?.includes('/auth/login')) {
+                return Promise.reject(error);
+            }
+
+            // If the error is specific to unverified email, we want to handle it in the component
+            if (error.response?.data?.detail === "please verify your account before you can login") {
+                return Promise.reject(error);
+            }
+
             originalRequest._retry = true;
             const refreshToken = localStorage.getItem('refresh_token');
 

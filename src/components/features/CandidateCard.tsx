@@ -1,47 +1,81 @@
 import { Candidate } from '@/types';
 import { cn } from '@/lib/utils';
-import { User2 } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 
 interface CandidateCardProps {
     candidate: Candidate;
     isSelected?: boolean;
     onSelect?: () => void;
     disabled?: boolean;
+    previewMode?: boolean;
 }
 
-export const CandidateCard = ({ candidate, isSelected, onSelect, disabled }: CandidateCardProps) => {
+export const CandidateCard = ({ candidate, isSelected, onSelect, disabled, previewMode }: CandidateCardProps) => {
+    const candidateName = candidate.fullName || candidate.fullname || 'Unknown';
+    const imageUrl = candidate.candidate_picture_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(candidateName)}&background=7C3AED&color=fff&size=256`;
+
     return (
         <div
-            onClick={() => !disabled && onSelect?.()}
+            onClick={() => !disabled && !previewMode && onSelect?.()}
             className={cn(
-                "relative flex items-center p-4 border rounded-xl cursor-pointer transition-all hover:shadow-md",
-                isSelected
-                    ? "border-primary bg-primary/5 shadow-md ring-1 ring-primary"
-                    : "border-gray-200 bg-white hover:border-primary/50",
-                disabled && "opacity-60 cursor-not-allowed hover:bg-white hover:border-gray-200 hover:shadow-none"
+                "relative flex flex-col border-2 rounded-2xl transition-all duration-200 overflow-hidden bg-white group",
+                previewMode
+                    ? "cursor-default border-gray-200"
+                    : "cursor-pointer hover:shadow-lg",
+                isSelected && !previewMode
+                    ? "border-primary shadow-lg ring-2 ring-primary/20"
+                    : "border-gray-200 hover:border-primary/50",
+                disabled && !previewMode && "opacity-60 cursor-not-allowed hover:shadow-none hover:border-gray-200"
             )}
         >
-            <div className="flex-shrink-0 h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mr-4 overflow-hidden border border-gray-100">
-                {candidate.image_url ? (
-                    <img src={candidate.image_url} alt={candidate.fullname} className="h-full w-full object-cover" />
-                ) : (
-                    <User2 className="h-6 w-6 text-gray-400" />
+            {/* Large Candidate Image */}
+            <div className="relative aspect-square w-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50">
+                <img
+                    src={imageUrl}
+                    alt={candidateName}
+                    className={cn(
+                        "w-full h-full object-cover transition-transform duration-300",
+                        !previewMode && "group-hover:scale-105"
+                    )}
+                    onError={(e) => {
+                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(candidateName)}&background=7C3AED&color=fff&size=256`;
+                    }}
+                />
+
+                {/* Selection Indicator Overlay */}
+                {isSelected && !previewMode && (
+                    <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                        <div className="absolute top-2 right-2 bg-primary text-white rounded-full p-1 shadow-lg">
+                            <CheckCircle className="h-4 w-4" />
+                        </div>
+                    </div>
                 )}
             </div>
 
-            <div className="flex-1 min-w-0">
-                <h4 className="text-base font-semibold text-gray-900 truncate">{candidate.fullname}</h4>
+            {/* Candidate Info */}
+            <div className="p-3 text-center">
+                <h4 className={cn(
+                    "text-sm font-bold truncate",
+                    isSelected && !previewMode ? "text-primary" : "text-gray-900"
+                )}>
+                    {candidateName}
+                </h4>
                 {candidate.nickname && (
-                    <p className="text-sm text-gray-500 truncate">"{candidate.nickname}"</p>
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">
+                        "{candidate.nickname}"
+                    </p>
                 )}
             </div>
 
-            <div className={cn(
-                "h-5 w-5 rounded-full border flex items-center justify-center transition-colors ml-2",
-                isSelected ? "border-primary bg-primary" : "border-gray-300 bg-white"
-            )}>
-                {isSelected && <div className="h-2 w-2 rounded-full bg-white" />}
-            </div>
+            {/* Selection Radio Circle - Hidden in Preview Mode */}
+            {!previewMode && (
+                <div className={cn(
+                    "absolute top-2 left-2 h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all bg-white shadow-sm",
+                    isSelected ? "border-primary bg-primary" : "border-gray-300"
+                )}>
+                    {isSelected && <div className="h-2 w-2 rounded-full bg-white" />}
+                </div>
+            )}
         </div>
     );
 };

@@ -2,8 +2,9 @@ import { Fragment } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, Transition } from '@headlessui/react';
 import { useAuth } from '@/contexts/AuthContext';
-import { ChevronDown, Vote } from 'lucide-react';
+import { ChevronDown, Vote, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Avatar } from '@/components/ui/Avatar';
 
 export const Navbar = () => {
     const { user, logout, isAuthenticated } = useAuth();
@@ -41,9 +42,11 @@ export const Navbar = () => {
                         <Menu as="div" className="relative ml-3">
                             <Menu.Button className="flex items-center gap-2 max-w-xs rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
                                 <span className="sr-only">Open user menu</span>
-                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                    {user?.fullName?.charAt(0) || 'U'}
-                                </div>
+                                <Avatar
+                                    src={user?.profile_picture_url}
+                                    fallback={user?.fullName || 'U'}
+                                    size="sm"
+                                />
                                 <span className="hidden md:block font-medium text-gray-700">{user?.fullName}</span>
                                 <ChevronDown className="h-4 w-4 text-gray-500 hidden md:block" />
                             </Menu.Button>
@@ -61,6 +64,20 @@ export const Navbar = () => {
                                         <p className="text-sm font-medium text-gray-900 truncate">{user?.fullName}</p>
                                         <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                                     </div>
+                                    <Menu.Item>
+                                        {({ active }) => (
+                                            <button
+                                                onClick={() => navigate('/settings')}
+                                                className={cn(
+                                                    active ? 'bg-gray-50' : '',
+                                                    'flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700'
+                                                )}
+                                            >
+                                                <Settings className="h-4 w-4" />
+                                                Settings
+                                            </button>
+                                        )}
+                                    </Menu.Item>
                                     <Menu.Item>
                                         {({ active }) => (
                                             <button

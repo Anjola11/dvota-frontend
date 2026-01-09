@@ -3,24 +3,85 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import api from '@/lib/axios';
-import { Vote } from 'lucide-react';
+import { Vote, RefreshCw } from 'lucide-react';
 
 export const VerifyOtp = () => {
     const [otp, setOtp] = useState<string[]>(new Array(6).fill(""));
     const [isLoading, setIsLoading] = useState(false);
+    const [isResending, setIsResending] = useState(false);
+    const [cooldown, setCooldown] = useState(0);
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const navigate = useNavigate();
     const location = useLocation();
 
-    const userId = localStorage.getItem('temp_user_id');
+    const [userId, setUserId] = useState<string | null>(localStorage.getItem('temp_user_id'));
     const email = localStorage.getItem('temp_email');
     const otpType = location.state?.otpType || 'signup';
+
+    // Auto-resend OTP if user came from login without user_id
+    useEffect(() => {
+        if (!userId && email) {
+            handleResendOtp(true);
+        }
+    }, []);
 
     useEffect(() => {
         if (inputRefs.current[0]) {
             inputRefs.current[0].focus();
         }
     }, []);
+
+    // Cooldown timer
+    useEffect(() => {
+        if (cooldown > 0) {
+            const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [cooldown]);
+
+    const handleResendOtp = async (silent = false) => {
+        if (!email) {
+            toast.error("Email not found. Please start over.");
+            navigate('/signup');
+            return;
+        }
+
+        if (cooldown > 0) return;
+
+        setIsResending(true);
+        try {
+            const response = await api.post('/auth/resend-otp', {
+                email: email,
+                otp_type: otpType
+            });
+
+            if (response.data.success) {
+                // Store the user_id from response
+                if (response.data.user_id) {
+                    localStorage.setItem('temp_user_id', response.data.user_id);
+                    setUserId(response.data.user_id);
+                }
+                if (!silent) {
+                    toast.success(response.data.message || 'OTP sent successfully');
+                }
+                setCooldown(60); // 60 second cooldown
+            }
+        } catch (error: any) {
+            const errorMessage = error.response?.data?.detail || error.response?.data?.message;
+
+            // Handle "already requested" case - set cooldown but don't show error
+            if (error.response?.status === 403 && errorMessage?.includes('already requested')) {
+                setCooldown(60);
+                if (!silent) {
+                    toast.error(errorMessage);
+                }
+            } else {
+                toast.error(errorMessage || 'Failed to resend OTP');
+            }
+        } finally {
+            setIsResending(false);
+        }
+    };
 
     const handleChange = (element: HTMLInputElement, index: number) => {
         if (isNaN(Number(element.value))) return false;
@@ -62,6 +123,12 @@ export const VerifyOtp = () => {
             return;
         }
 
+        if (!userId) {
+            toast.error("Session expired. Please request a new OTP.");
+            handleResendOtp();
+            return;
+        }
+
         setIsLoading(true);
         try {
             const response = await api.post('/auth/verify_otp', {
@@ -84,7 +151,14 @@ export const VerifyOtp = () => {
                 toast.error(response.data.message || 'Verification failed');
             }
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Invalid OTP');
+            const errorMessage = error.response?.data?.detail || error.response?.data?.message || 'Invalid OTP';
+            toast.error(errorMessage);
+
+            // If OTP expired, suggest resending
+            if (errorMessage.toLowerCase().includes('expired')) {
+                setOtp(new Array(6).fill(""));
+                inputRefs.current[0]?.focus();
+            }
         } finally {
             setIsLoading(false);
         }
@@ -119,13 +193,13 @@ export const VerifyOtp = () => {
                                         onKeyDown={e => handleKeyDown(e, index)}
                                         onPaste={handlePaste}
                                         ref={(el) => { inputRefs.current[index] = el; }}
-                                        disabled={isLoading}
+                                        disabled={isLoading || isResending}
                                     />
                                 );
                             })}
                         </div>
 
-                        <Button type="submit" className="w-full" isLoading={isLoading} disabled={otp.join("").length !== 6}>
+                        <Button type="submit" className="w-full" isLoading={isLoading} disabled={otp.join("").length !== 6 || isResending}>
                             Verify Email
                         </Button>
                     </form>
@@ -133,8 +207,25 @@ export const VerifyOtp = () => {
                     <div className="mt-6 text-center">
                         <p className="text-sm text-gray-600">
                             Didn't receive the code?{' '}
-                            <button className="font-medium text-primary hover:text-primary-dark transition-colors" type="button">
-                                Resend
+                            <button
+                                className={`font-medium transition-colors inline-flex items-center gap-1 ${cooldown > 0 || isResending
+                                        ? 'text-gray-400 cursor-not-allowed'
+                                        : 'text-primary hover:text-primary-dark'
+                                    }`}
+                                type="button"
+                                onClick={() => handleResendOtp()}
+                                disabled={cooldown > 0 || isResending}
+                            >
+                                {isResending ? (
+                                    <>
+                                        <RefreshCw className="h-3 w-3 animate-spin" />
+                                        Sending...
+                                    </>
+                                ) : cooldown > 0 ? (
+                                    `Resend in ${cooldown}s`
+                                ) : (
+                                    'Resend'
+                                )}
                             </button>
                         </p>
                     </div>

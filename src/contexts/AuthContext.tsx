@@ -7,6 +7,7 @@ interface AuthContextType {
     isLoading: boolean;
     login: (data: LoginResponse) => void;
     logout: () => void;
+    updateUser: (data: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,7 +46,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             id: data.user_id || data.id || '',
             email: data.email || '',
             fullName: data.fullName || '',
-            role: data.role || 'voter'
+            role: data.role || 'voter',
+            profile_picture_url: data.profile_picture_url || ''
         };
 
         if (!userObj.id) {
@@ -66,8 +68,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(null);
     };
 
+    const updateUser = (data: Partial<User>) => {
+        if (user) {
+            const updatedUser = { ...user, ...data };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            setUser(updatedUser);
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout }}>
+        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout, updateUser }}>
             {children}
         </AuthContext.Provider>
     );

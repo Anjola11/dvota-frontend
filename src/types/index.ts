@@ -6,6 +6,7 @@ export interface User {
     email: string;
     fullName: string;
     role?: 'voter' | 'admin';
+    profile_picture_url?: string; // Profile picture URL from backend
 }
 
 export interface LoginResponse {
@@ -47,12 +48,13 @@ export interface Position {
 export interface Candidate {
     id: string; // ✅ Primary field from backend
     fullname: string;
+    fullName?: string; // Backend sends fullName
     nickname?: string;
     user_id: string;
     position_id: string;
     vote_count?: number; // Only present in results endpoint
     created_at: string;
-    image_url?: string; // Optional candidate image
+    candidate_picture_url?: string; // Candidate image (ui-avatars fallback if not set)
 }
 
 export interface VoteResponse {
