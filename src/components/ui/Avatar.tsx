@@ -30,7 +30,7 @@ export const Avatar = ({
                 src={src}
                 alt={alt}
                 className={cn(
-                    'rounded-full object-cover ring-2 ring-white shadow-md',
+                    'rounded-full object-cover ring-2 ring-purple-300 shadow-md',
                     sizeClasses[size],
                     className
                 )}

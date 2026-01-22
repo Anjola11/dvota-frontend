@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, LoginResponse } from '@/types';
+import api from '@/lib/axios';
 
 interface AuthContextType {
     user: User | null;
@@ -17,11 +18,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Check for token on mount
-        const token = localStorage.getItem('access_token');
+        // Check for stored user data on mount
+        // Cookies handle actual authentication, we just need user info for UI
         const storedUser = localStorage.getItem('user');
 
-        if (token && storedUser && storedUser !== 'undefined') {
+        if (storedUser && storedUser !== 'undefined') {
             try {
                 const parsedUser = JSON.parse(storedUser);
                 if (parsedUser) {
@@ -31,8 +32,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 }
             } catch (e) {
                 console.error("Failed to parse user", e);
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('refresh_token');
                 localStorage.removeItem('user');
                 setUser(null);
             }
@@ -52,20 +51,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (!userObj.id) {
             console.error("Login data missing user_id:", data);
-            // Attempting to proceed might be risky if ID is needed, but we can try saving tokens.
         }
 
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('refresh_token', data.refresh_token);
+        // Development mode: Store tokens in localStorage (cross-origin cookies don't work)
+        // Production mode: Tokens are in httponly cookies only
+        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        if (isDevelopment && data.access_token && data.refresh_token) {
+            localStorage.setItem('access_token', data.access_token);
+            localStorage.setItem('refresh_token', data.refresh_token);
+        }
+        
         localStorage.setItem('user', JSON.stringify(userObj));
         setUser(userObj);
     };
 
-    const logout = () => {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
-        setUser(null);
+    const logout = async () => {
+        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        try {
+            if (isDevelopment) {
+                // Development: Send refresh token in body
+                const refreshToken = localStorage.getItem('refresh_token');
+                await api.post('/auth/logout', { refresh_token: refreshToken });
+            } else {
+                // Production: Cookies are automatically sent
+                await api.post('/auth/logout', {});
+            }
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
+            // Clear all local storage
+            if (isDevelopment) {
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+            }
+            localStorage.removeItem('user');
+            setUser(null);
+        }
     };
 
     const updateUser = (data: Partial<User>) => {

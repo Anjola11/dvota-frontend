@@ -64,17 +64,14 @@ export const ElectionCard = ({ election }: ElectionCardProps) => {
                         </Button>
                     </Link>
                 ) : (
-                    <Link to={`/election/${election.election_id}/details`}> {/* Updated from /election/:id to /election/:id/details for consistency if needed, assuming route is /election/:id/details or similar. Reverting to /election/:id if that's the main route */}
-                        {/* Actually, looking at App.tsx or routes would confirm. Assuming /election/:id is ElectionDetails */}
-                        <Link to={`/election/${election.election_id}`}>
-                            <Button
-                                className="w-full"
-                                variant={election.election_status === 'active' && !isVoted ? 'primary' : 'outline'}
-                                disabled={election.election_status === 'upcoming'}
-                            >
-                                {election.election_status === 'ended' ? 'View Results' : isVoted ? 'View Details' : 'Vote Now'}
-                            </Button>
-                        </Link>
+                    <Link to={`/election/${election.election_id}/details`}>
+                        <Button
+                            className="w-full"
+                            variant={election.election_status === 'active' && !isVoted ? 'primary' : 'outline'}
+                            disabled={election.election_status === 'upcoming'}
+                        >
+                            {election.election_status === 'ended' ? 'View Results' : isVoted ? 'View Details' : 'Vote Now'}
+                        </Button>
                     </Link>
                 )}
             </div>

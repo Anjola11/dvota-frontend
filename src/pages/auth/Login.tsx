@@ -37,10 +37,9 @@ export const Login = () => {
             const errorData = error.response?.data || {};
             const errorMessage = errorData.detail || errorData.message || "";
 
-            if (error.response?.status === 401 && errorMessage.includes("verify your account")) {
+            if (error.response?.status === 401 && errorMessage.toLowerCase().includes("verify")) {
                 toast.error("Please verify your account before logging in");
                 localStorage.setItem('temp_email', data.email);
-                // Note: user_id may not be available here, VerifyOtp will handle resending
                 navigate('/verify-otp', { state: { otpType: 'signup' } });
                 return;
             }

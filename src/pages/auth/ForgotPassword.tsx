@@ -25,7 +25,7 @@ export const ForgotPassword = () => {
                 toast.error(response.data.message || 'Request failed');
             }
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Something went wrong');
+            toast.error(error.response?.data?.detail || error.response?.data?.message || 'Something went wrong');
         } finally {
             setIsLoading(false);
         }
